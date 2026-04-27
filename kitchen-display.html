@@ -6,18 +6,6 @@
 <title>Alex Pizza — Kitchen Display</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
-  /* =============================================
-     CONFIGURATION — Edit these before deploying
-     ============================================= */
-  :root {
-    --supabase-url: 'PASTE_YOUR_SUPABASE_URL';
-    --supabase-anon-key: 'PASTE_YOUR_SUPABASE_ANON_KEY';
-  }
-
-  /* =============================================
-     DESIGN SYSTEM — Industrial / Utilitarian
-     Warm amber on dark steel. Maximum legibility.
-     ============================================= */
   :root {
     --bg:           #0f0e0c;
     --surface:      #1a1916;
@@ -35,36 +23,21 @@
     --sans:         'IBM Plex Sans', sans-serif;
     --display:      'Bebas Neue', sans-serif;
     --radius:       6px;
-    --refresh-sec:  30; /* auto-refresh interval in seconds */
   }
 
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--bg); color: var(--text-bright); font-family: var(--sans); overflow-x: hidden; }
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text-bright);
-    font-family: var(--sans);
-    overflow-x: hidden;
-  }
-
-  /* ---- SCANLINE TEXTURE ---- */
   body::before {
     content: '';
     position: fixed;
     inset: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      rgba(0,0,0,0.08) 2px,
-      rgba(0,0,0,0.08) 4px
-    );
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.08) 2px, rgba(0,0,0,0.08) 4px);
     pointer-events: none;
     z-index: 9999;
   }
 
-  /* ---- HEADER ---- */
+  /* HEADER */
   header {
     display: flex;
     align-items: center;
@@ -77,526 +50,167 @@
     top: 0;
     z-index: 100;
   }
-
-  .header-left {
-    display: flex;
-    align-items: baseline;
-    gap: 16px;
-  }
-
-  .logo {
-    font-family: var(--display);
-    font-size: 2.2rem;
-    letter-spacing: 0.04em;
-    color: var(--amber);
-    line-height: 1;
-  }
-
-  .logo-sub {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    color: var(--text-mid);
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-  }
-
-  .header-right {
-    display: flex;
-    align-items: center;
-    gap: 24px;
-  }
-
-  #clock {
-    font-family: var(--mono);
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: var(--text-bright);
-    letter-spacing: 0.05em;
-    min-width: 90px;
-    text-align: right;
-  }
-
-  #status-pill {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--text-mid);
-    letter-spacing: 0.1em;
-  }
-
-  #status-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--green);
-    transition: background 0.3s;
-  }
-
-  #status-dot.error  { background: var(--red); }
+  .header-left { display: flex; align-items: baseline; gap: 16px; }
+  .logo { font-family: var(--display); font-size: 2.2rem; letter-spacing: 0.04em; color: var(--amber); line-height: 1; }
+  .logo-sub { font-family: var(--mono); font-size: 0.65rem; color: var(--text-mid); letter-spacing: 0.2em; text-transform: uppercase; }
+  .header-right { display: flex; align-items: center; gap: 16px; }
+  #clock { font-family: var(--mono); font-size: 1.5rem; font-weight: 600; color: var(--text-bright); letter-spacing: 0.05em; }
+  #status-pill { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 0.7rem; color: var(--text-mid); letter-spacing: 0.1em; }
+  #status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); transition: background 0.3s; }
+  #status-dot.error { background: var(--red); }
   #status-dot.loading { background: var(--amber); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
 
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  #refresh-btn {
+  .hdr-btn {
     background: none;
     border: 1px solid var(--border);
     color: var(--text-mid);
     font-family: var(--mono);
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     letter-spacing: 0.1em;
     padding: 6px 12px;
     border-radius: var(--radius);
     cursor: pointer;
     transition: all 0.15s;
+    white-space: nowrap;
   }
-  #refresh-btn:hover { border-color: var(--amber); color: var(--amber); }
-  #refresh-btn:active { opacity: 0.6; }
+  .hdr-btn:hover { border-color: var(--amber); color: var(--amber); }
+  .hdr-btn.export { border-color: var(--green-dim); color: var(--green); }
+  .hdr-btn.export:hover { border-color: var(--green); background: rgba(60,184,122,0.08); }
 
-  /* ---- PROGRESS BAR ---- */
-  #progress-bar {
-    height: 2px;
-    background: var(--border);
-    position: sticky;
-    top: 64px;
-    z-index: 99;
-  }
-  #progress-fill {
-    height: 100%;
-    background: var(--amber-dim);
-    width: 0%;
-    transition: width 1s linear;
-  }
+  /* PROGRESS BAR */
+  #progress-bar { height: 2px; background: var(--border); position: sticky; top: 64px; z-index: 99; }
+  #progress-fill { height: 100%; background: var(--amber-dim); width: 0%; transition: width 1s linear; }
 
-  /* ---- STATS BAR ---- */
-  #stats-bar {
-    display: flex;
-    gap: 2px;
-    padding: 10px 28px;
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .stat {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 6px 18px;
-    background: var(--surface-hi);
-    border-radius: var(--radius);
-    margin-right: 4px;
-  }
-
-  .stat-label {
-    font-family: var(--mono);
-    font-size: 0.62rem;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.15em;
-  }
-
-  .stat-value {
-    font-family: var(--display);
-    font-size: 1.5rem;
-    letter-spacing: 0.03em;
-    color: var(--amber);
-  }
-
+  /* STATS BAR */
+  #stats-bar { display: flex; gap: 4px; padding: 10px 28px; background: var(--surface); border-bottom: 1px solid var(--border); flex-wrap: wrap; align-items: center; }
+  .stat { display: flex; align-items: center; gap: 10px; padding: 6px 18px; background: var(--surface-hi); border-radius: var(--radius); margin-right: 4px; }
+  .stat-label { font-family: var(--mono); font-size: 0.62rem; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.15em; }
+  .stat-value { font-family: var(--display); font-size: 1.5rem; letter-spacing: 0.03em; color: var(--amber); }
   .stat-value.green { color: var(--green); }
 
-  /* ---- MAIN GRID ---- */
-  #order-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-    gap: 16px;
-    padding: 20px 28px 40px;
-    align-items: start;
-  }
-
-  /* ---- ORDER CARD ---- */
-  .order-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    overflow: hidden;
-    animation: card-in 0.3s ease-out;
-    position: relative;
-  }
-
-  @keyframes card-in {
-    from { opacity: 0; transform: translateY(8px); }
-    to   { opacity: 1; transform: translateY(0); }
-  }
-
-  /* status left-bar accent */
-  .order-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; bottom: 0;
-    width: 4px;
-  }
-  .order-card.status-new::before       { background: var(--amber); }
-  .order-card.status-preparing::before { background: #3b82f6; }
-  .order-card.status-ready::before     { background: var(--green); }
-  .order-card.status-done::before      { background: var(--text-dim); }
-
-  .card-header {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    padding: 14px 16px 12px 20px;
-    border-bottom: 1px solid var(--border);
-  }
-
-  .order-num {
-    font-family: var(--display);
-    font-size: 2.4rem;
-    letter-spacing: 0.02em;
-    color: var(--amber);
-    line-height: 1;
-  }
-
-  .order-meta {
-    text-align: right;
-  }
-
-  .customer-name {
-    font-family: var(--sans);
-    font-weight: 600;
-    font-size: 1rem;
-    color: var(--text-bright);
-    line-height: 1.2;
-  }
-
-  .customer-phone {
-    font-family: var(--mono);
-    font-size: 0.72rem;
-    color: var(--text-mid);
-    margin-top: 2px;
-  }
-
-  /* ---- PICKUP BADGE ---- */
-  .pickup-badge {
+  /* DATE FILTER */
+  #date-filter-bar {
     display: flex;
     align-items: center;
-    gap: 8px;
-    padding: 8px 16px 8px 20px;
+    gap: 12px;
+    padding: 8px 28px;
     background: var(--surface-hi);
     border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
   }
-
-  .pickup-icon {
-    font-size: 0.85rem;
-    opacity: 0.7;
-  }
-
-  .pickup-time {
-    font-family: var(--mono);
-    font-size: 0.8rem;
-    font-weight: 600;
-    color: var(--amber);
-    letter-spacing: 0.04em;
-  }
-
-  .order-age {
-    margin-left: auto;
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    color: var(--text-dim);
-  }
-
-  /* ---- ITEMS LIST ---- */
-  .items-list {
-    padding: 12px 16px 12px 20px;
-  }
-
-  .item-row {
-    display: flex;
-    align-items: baseline;
-    gap: 10px;
-    padding: 5px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-  }
-
-  .item-row:last-child { border-bottom: none; }
-
-  .item-qty {
-    font-family: var(--display);
-    font-size: 1.1rem;
-    color: var(--amber-dim);
-    min-width: 22px;
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  .item-name {
-    font-family: var(--sans);
-    font-weight: 500;
-    font-size: 0.92rem;
-    color: var(--text-bright);
-    flex: 1;
-  }
-
-  .item-size {
-    font-family: var(--mono);
-    font-size: 0.65rem;
-    color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    border: 1px solid var(--border);
-    padding: 1px 5px;
-    border-radius: 3px;
-    flex-shrink: 0;
-  }
-
-  .item-addons {
-    font-family: var(--mono);
-    font-size: 0.68rem;
-    color: #8b9cf0;
-    padding: 2px 0 4px 32px;
-    border-bottom: 1px solid rgba(255,255,255,0.04);
-  }
-
-  /* ---- CARD FOOTER ---- */
-  .card-footer {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 10px 16px 10px 20px;
-    background: var(--surface-hi);
-    border-top: 1px solid var(--border);
-  }
-
-  .order-total {
-    font-family: var(--display);
-    font-size: 1.3rem;
-    letter-spacing: 0.03em;
-    color: var(--text-bright);
-  }
-
-  .status-badge {
-    font-family: var(--mono);
-    font-size: 0.62rem;
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    padding: 4px 10px;
-    border-radius: 3px;
-    border: 1px solid;
-  }
-
-  .status-badge.new {
-    color: var(--amber);
-    border-color: var(--amber-dim);
-    background: rgba(245,166,35,0.08);
-  }
-
-  .status-badge.preparing {
-    color: #60a5fa;
-    border-color: #1d4ed8;
-    background: rgba(59,130,246,0.08);
-  }
-
-  .status-badge.ready {
-    color: var(--green);
-    border-color: var(--green-dim);
-    background: rgba(60,184,122,0.08);
-  }
-
-  .status-badge.done {
-    color: var(--text-dim);
-    border-color: var(--border);
-    background: transparent;
-  }
-
-  /* ---- STATUS ACTION BUTTON ---- */
-  .status-btn {
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    font-weight: 600;
-    letter-spacing: 0.12em;
-    padding: 7px 14px;
-    border-radius: 4px;
-    border: none;
-    cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
-  }
-  .status-btn:active { transform: scale(0.96); opacity: 0.8; }
-  .status-btn.new       { background: var(--amber); color: #0f0e0c; }
-  .status-btn.preparing { background: #3b82f6; color: #fff; }
-  .status-btn.ready     { background: var(--green); color: #0f0e0c; }
-
-  /* ---- EMPTY STATE ---- */
-  #empty-state {
-    display: none;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    height: calc(100vh - 180px);
-    gap: 16px;
-    color: var(--text-dim);
-  }
-
-  #empty-state.visible { display: flex; }
-
-  .empty-icon {
-    font-size: 3rem;
-    opacity: 0.3;
-  }
-
-  .empty-label {
-    font-family: var(--display);
-    font-size: 1.8rem;
-    letter-spacing: 0.1em;
-    color: var(--text-dim);
-  }
-
-  .empty-sub {
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--text-dim);
-    letter-spacing: 0.1em;
-  }
-
-  /* ---- CONFIG OVERLAY ---- */
-  #config-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.85);
-    z-index: 1000;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  #config-overlay.hidden { display: none; }
-
-  .config-box {
-    background: var(--surface);
-    border: 1px solid var(--amber);
-    border-radius: var(--radius);
-    padding: 32px;
-    width: min(480px, 90vw);
-  }
-
-  .config-title {
-    font-family: var(--display);
-    font-size: 1.8rem;
-    color: var(--amber);
-    margin-bottom: 6px;
-  }
-
-  .config-sub {
-    font-family: var(--mono);
-    font-size: 0.68rem;
-    color: var(--text-mid);
-    letter-spacing: 0.08em;
-    margin-bottom: 24px;
-  }
-
-  .config-field {
-    margin-bottom: 16px;
-  }
-
-  .config-label {
-    display: block;
-    font-family: var(--mono);
-    font-size: 0.68rem;
-    color: var(--text-mid);
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    margin-bottom: 6px;
-  }
-
-  .config-input {
-    width: 100%;
+  .date-label { font-family: var(--mono); font-size: 0.65rem; color: var(--text-dim); letter-spacing: 0.12em; text-transform: uppercase; }
+  .date-input {
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: var(--radius);
     color: var(--text-bright);
     font-family: var(--mono);
-    font-size: 0.8rem;
-    padding: 10px 12px;
+    font-size: 0.75rem;
+    padding: 5px 10px;
     outline: none;
     transition: border-color 0.15s;
+    color-scheme: dark;
   }
-
-  .config-input:focus { border-color: var(--amber); }
-
-  .config-hint {
+  .date-input:focus { border-color: var(--amber); }
+  .date-quick { display: flex; gap: 4px; }
+  .dq-btn {
     font-family: var(--mono);
     font-size: 0.62rem;
-    color: var(--text-dim);
-    margin-top: 4px;
-  }
-
-  .config-save {
-    width: 100%;
-    margin-top: 8px;
-    background: var(--amber);
-    color: #0f0e0c;
-    border: none;
-    border-radius: var(--radius);
-    font-family: var(--display);
-    font-size: 1.1rem;
     letter-spacing: 0.1em;
-    padding: 12px;
-    cursor: pointer;
-    transition: opacity 0.15s;
-  }
-
-  .config-save:hover { opacity: 0.9; }
-
-  .config-error {
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    color: var(--red);
-    margin-top: 12px;
-    display: none;
-  }
-
-  .config-error.visible { display: block; }
-
-  /* ---- FILTER TABS ---- */
-  #filter-bar {
-    display: flex;
-    gap: 4px;
-    padding: 0 28px 0;
+    padding: 4px 10px;
     background: var(--surface);
-    border-bottom: 1px solid var(--border);
-  }
-
-  .filter-tab {
-    font-family: var(--mono);
-    font-size: 0.7rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    padding: 10px 14px;
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    color: var(--text-mid);
     cursor: pointer;
     transition: all 0.15s;
-    margin-bottom: -1px;
   }
+  .dq-btn:hover, .dq-btn.active { border-color: var(--amber); color: var(--amber); background: rgba(245,166,35,0.08); }
+  #date-clear-btn { font-family: var(--mono); font-size: 0.62rem; color: var(--text-dim); background: none; border: none; cursor: pointer; padding: 4px 8px; }
+  #date-clear-btn:hover { color: var(--red); }
 
+  /* FILTER TABS */
+  #filter-bar { display: flex; gap: 4px; padding: 0 28px; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .filter-tab {
+    font-family: var(--mono); font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase;
+    padding: 10px 14px; background: none; border: none; border-bottom: 2px solid transparent;
+    color: var(--text-dim); cursor: pointer; transition: all 0.15s; margin-bottom: -1px;
+  }
   .filter-tab:hover { color: var(--text-mid); }
-  .filter-tab.active {
-    color: var(--amber);
-    border-bottom-color: var(--amber);
-  }
+  .filter-tab.active { color: var(--amber); border-bottom-color: var(--amber); }
 
-  /* ---- RESPONSIVE ---- */
-  @media (max-width: 600px) {
-    header { padding: 0 14px; }
-    #order-grid { padding: 12px 12px 40px; gap: 12px; }
-    #stats-bar { padding: 8px 14px; flex-wrap: wrap; }
-    #filter-bar { padding: 0 14px; }
-    .logo { font-size: 1.6rem; }
+  /* ORDER GRID */
+  #order-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; padding: 20px 28px 40px; align-items: start; }
+
+  /* ORDER CARD */
+  .order-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; animation: card-in 0.3s ease-out; position: relative; }
+  @keyframes card-in { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+  .order-card::before { content:''; position:absolute; top:0;left:0;bottom:0; width:4px; }
+  .order-card.status-new::before       { background: var(--amber); }
+  .order-card.status-preparing::before { background: #3b82f6; }
+  .order-card.status-ready::before     { background: var(--green); }
+  .order-card.status-done::before      { background: var(--text-dim); }
+
+  .card-header { display:flex; align-items:flex-start; justify-content:space-between; padding:14px 16px 12px 20px; border-bottom:1px solid var(--border); }
+  .order-num { font-family:var(--display); font-size:2.4rem; letter-spacing:0.02em; color:var(--amber); line-height:1; }
+  .order-meta { text-align:right; }
+  .customer-name { font-weight:600; font-size:1rem; color:var(--text-bright); line-height:1.2; }
+  .customer-phone { font-family:var(--mono); font-size:0.72rem; color:var(--text-mid); margin-top:2px; }
+
+  .pickup-badge { display:flex; align-items:center; gap:8px; padding:6px 16px 6px 20px; background:var(--surface-hi); border-bottom:1px solid var(--border); }
+  .pickup-icon { font-size:0.85rem; opacity:0.7; }
+  .pickup-time { font-family:var(--mono); font-size:0.78rem; font-weight:600; color:var(--amber); letter-spacing:0.04em; }
+  .order-date { font-family:var(--mono); font-size:0.62rem; color:var(--text-dim); margin-left:auto; text-align:right; line-height:1.4; }
+
+  .items-list { padding:12px 16px 12px 20px; }
+  .item-row { display:flex; align-items:baseline; gap:10px; padding:5px 0; border-bottom:1px solid rgba(255,255,255,0.04); }
+  .item-row:last-child { border-bottom:none; }
+  .item-qty { font-family:var(--display); font-size:1.1rem; color:var(--amber-dim); min-width:22px; text-align:right; flex-shrink:0; }
+  .item-name { font-weight:500; font-size:0.92rem; color:var(--text-bright); flex:1; }
+  .item-size { font-family:var(--mono); font-size:0.65rem; color:var(--text-dim); text-transform:uppercase; letter-spacing:0.1em; border:1px solid var(--border); padding:1px 5px; border-radius:3px; flex-shrink:0; }
+  .item-addons { font-family:var(--mono); font-size:0.68rem; color:#8b9cf0; padding:2px 0 4px 32px; border-bottom:1px solid rgba(255,255,255,0.04); }
+
+  .card-footer { display:flex; align-items:center; justify-content:space-between; padding:10px 16px 10px 20px; background:var(--surface-hi); border-top:1px solid var(--border); }
+  .order-total { font-family:var(--display); font-size:1.3rem; letter-spacing:0.03em; color:var(--text-bright); }
+
+  .status-btn { font-family:var(--mono); font-size:0.7rem; font-weight:600; letter-spacing:0.12em; padding:7px 14px; border-radius:4px; border:none; cursor:pointer; transition:opacity 0.15s,transform 0.1s; }
+  .status-btn:active { transform:scale(0.96); opacity:0.8; }
+  .status-btn.new       { background:var(--amber); color:#0f0e0c; }
+  .status-btn.preparing { background:#3b82f6; color:#fff; }
+  .status-btn.ready     { background:var(--green); color:#0f0e0c; }
+  .status-badge { font-family:var(--mono); font-size:0.62rem; letter-spacing:0.15em; text-transform:uppercase; padding:4px 10px; border-radius:3px; border:1px solid; }
+  .status-badge.done { color:var(--text-dim); border-color:var(--border); background:transparent; }
+
+  /* EMPTY STATE */
+  #empty-state { display:none; flex-direction:column; align-items:center; justify-content:center; height:calc(100vh - 220px); gap:16px; }
+  #empty-state.visible { display:flex; }
+  .empty-icon { font-size:3rem; opacity:0.3; }
+  .empty-label { font-family:var(--display); font-size:1.8rem; letter-spacing:0.1em; color:var(--text-dim); }
+  .empty-sub { font-family:var(--mono); font-size:0.7rem; color:var(--text-dim); letter-spacing:0.1em; }
+
+  /* CONFIG OVERLAY */
+  #config-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:1000; display:flex; align-items:center; justify-content:center; }
+  #config-overlay.hidden { display:none; }
+  .config-box { background:var(--surface); border:1px solid var(--amber); border-radius:var(--radius); padding:32px; width:min(480px,90vw); }
+  .config-title { font-family:var(--display); font-size:1.8rem; color:var(--amber); margin-bottom:6px; }
+  .config-sub { font-family:var(--mono); font-size:0.68rem; color:var(--text-mid); letter-spacing:0.08em; margin-bottom:24px; }
+  .config-field { margin-bottom:16px; }
+  .config-label { display:block; font-family:var(--mono); font-size:0.68rem; color:var(--text-mid); letter-spacing:0.1em; text-transform:uppercase; margin-bottom:6px; }
+  .config-input { width:100%; background:var(--bg); border:1px solid var(--border); border-radius:var(--radius); color:var(--text-bright); font-family:var(--mono); font-size:0.8rem; padding:10px 12px; outline:none; transition:border-color 0.15s; }
+  .config-input:focus { border-color:var(--amber); }
+  .config-hint { font-family:var(--mono); font-size:0.62rem; color:var(--text-dim); margin-top:4px; }
+  .config-save { width:100%; margin-top:8px; background:var(--amber); color:#0f0e0c; border:none; border-radius:var(--radius); font-family:var(--display); font-size:1.1rem; letter-spacing:0.1em; padding:12px; cursor:pointer; }
+  .config-error { font-family:var(--mono); font-size:0.7rem; color:var(--red); margin-top:12px; display:none; }
+  .config-error.visible { display:block; }
+
+  @media (max-width:600px) {
+    header { padding:0 14px; }
+    #order-grid { padding:12px 12px 40px; gap:12px; }
+    #stats-bar, #date-filter-bar { padding:8px 14px; }
+    #filter-bar { padding:0 14px; }
+    .logo { font-size:1.6rem; }
+    .header-right { gap:8px; }
   }
 </style>
 </head>
@@ -607,19 +221,16 @@
   <div class="config-box">
     <div class="config-title">Kitchen Display Setup</div>
     <div class="config-sub">Enter your Supabase connection details. These are saved in your browser.</div>
-
     <div class="config-field">
       <label class="config-label" for="inp-url">Supabase Project URL</label>
       <input id="inp-url" class="config-input" type="text" placeholder="https://xxxxxxxxxxxx.supabase.co" autocomplete="off" spellcheck="false">
       <div class="config-hint">Found in Supabase Dashboard > Project Settings > API</div>
     </div>
-
     <div class="config-field">
       <label class="config-label" for="inp-key">Supabase Anon Key</label>
       <input id="inp-key" class="config-input" type="password" placeholder="eyJhbGci..." autocomplete="off" spellcheck="false">
-      <div class="config-hint">Use the public anon key (safe for browser). Row Level Security must allow SELECT on orders.</div>
+      <div class="config-hint">Use the public anon key. Row Level Security must allow SELECT on orders.</div>
     </div>
-
     <button class="config-save" onclick="saveConfig()">Connect &amp; Launch</button>
     <div id="config-error" class="config-error"></div>
   </div>
@@ -637,277 +248,209 @@
       <span id="status-text">Connecting...</span>
     </div>
     <div id="clock">--:--</div>
-    <button id="refresh-btn" onclick="fetchOrders()">Refresh</button>
+    <button class="hdr-btn" onclick="fetchOrders()">Refresh</button>
+    <button class="hdr-btn export" onclick="exportToCSV()">&#8595; Export CSV</button>
   </div>
 </header>
 
-<!-- REFRESH PROGRESS BAR -->
 <div id="progress-bar"><div id="progress-fill"></div></div>
 
 <!-- STATS BAR -->
 <div id="stats-bar">
-  <div class="stat">
-    <span class="stat-label">New</span>
-    <span class="stat-value" id="stat-new">0</span>
-  </div>
-  <div class="stat">
-    <span class="stat-label">Preparing</span>
-    <span class="stat-value" id="stat-preparing">0</span>
-  </div>
-  <div class="stat">
-    <span class="stat-label">Ready</span>
-    <span class="stat-value green" id="stat-ready">0</span>
-  </div>
-  <div class="stat" style="margin-left:auto;">
-    <span class="stat-label">Today Total</span>
-    <span class="stat-value" id="stat-today">0</span>
-  </div>
+  <div class="stat"><span class="stat-label">New</span><span class="stat-value" id="stat-new">0</span></div>
+  <div class="stat"><span class="stat-label">Preparing</span><span class="stat-value" id="stat-preparing">0</span></div>
+  <div class="stat"><span class="stat-label">Ready</span><span class="stat-value green" id="stat-ready">0</span></div>
+  <div class="stat" style="margin-left:auto;"><span class="stat-label">Showing</span><span class="stat-value" id="stat-today">0</span></div>
 </div>
 
-<!-- FILTER TABS -->
+<!-- DATE FILTER BAR -->
+<div id="date-filter-bar">
+  <span class="date-label">Date</span>
+  <div class="date-quick">
+    <button class="dq-btn active" id="dq-today" onclick="setDateQuick('today', this)">Today</button>
+    <button class="dq-btn" id="dq-yesterday" onclick="setDateQuick('yesterday', this)">Yesterday</button>
+    <button class="dq-btn" id="dq-week" onclick="setDateQuick('week', this)">This Week</button>
+    <button class="dq-btn" id="dq-all" onclick="setDateQuick('all', this)">All</button>
+  </div>
+  <span class="date-label" style="margin-left:8px;">or pick range:</span>
+  <input type="date" id="date-from" class="date-input" onchange="setDateRange()">
+  <span class="date-label">to</span>
+  <input type="date" id="date-to" class="date-input" onchange="setDateRange()">
+  <button id="date-clear-btn" onclick="setDateQuick('today', document.getElementById('dq-today'))">Clear</button>
+</div>
+
+<!-- STATUS FILTER TABS -->
 <div id="filter-bar">
-  <button class="filter-tab active" data-filter="active" onclick="setFilter('active', this)">Active</button>
-  <button class="filter-tab" data-filter="new" onclick="setFilter('new', this)">New</button>
-  <button class="filter-tab" data-filter="preparing" onclick="setFilter('preparing', this)">Preparing</button>
-  <button class="filter-tab" data-filter="ready" onclick="setFilter('ready', this)">Ready</button>
-  <button class="filter-tab" data-filter="done" onclick="setFilter('done', this)">Done</button>
-  <button class="filter-tab" data-filter="all" onclick="setFilter('all', this)">All</button>
+  <button class="filter-tab active" onclick="setFilter('active', this)">Active</button>
+  <button class="filter-tab" onclick="setFilter('new', this)">New</button>
+  <button class="filter-tab" onclick="setFilter('preparing', this)">Preparing</button>
+  <button class="filter-tab" onclick="setFilter('ready', this)">Ready</button>
+  <button class="filter-tab" onclick="setFilter('done', this)">Done</button>
+  <button class="filter-tab" onclick="setFilter('all', this)">All</button>
 </div>
 
-<!-- ORDER GRID -->
 <div id="order-grid"></div>
-
-<!-- EMPTY STATE -->
 <div id="empty-state">
-  <div class="empty-icon">🍕</div>
+  <div class="empty-icon">&#127829;</div>
   <div class="empty-label">No Orders</div>
-  <div class="empty-sub">Waiting for incoming orders...</div>
+  <div class="empty-sub" id="empty-sub-text">No orders match the current filters</div>
 </div>
 
 <script>
   // =============================================
   //  STATE
   // =============================================
-  let supabaseUrl  = '';
-  let supabaseKey  = '';
-  let allOrders    = [];
-  let activeFilter = 'active';
-  let orderCounter = 0; // used to assign display numbers
-  let orderNumMap  = {}; // id -> display number
-  let refreshTimer = null;
-  let progressTimer = null;
-  const REFRESH_SEC = 30;
+  var supabaseUrl  = '';
+  var supabaseKey  = '';
+  var allOrders    = [];
+  var activeFilter = 'active';
+  var activeDateMode = 'today'; // today | yesterday | week | all | range
+  var dateFrom = null;
+  var dateTo   = null;
+  var orderCounter = 0;
+  var orderNumMap  = {};
+  var progressTimer = null;
+  var REFRESH_SEC = 30;
 
   // =============================================
-  //  CONFIG MANAGEMENT
+  //  CONFIG
   // =============================================
   function loadConfig() {
     supabaseUrl = localStorage.getItem('kd_url') || '';
     supabaseKey = localStorage.getItem('kd_key') || '';
-
     if (supabaseUrl && supabaseKey) {
       document.getElementById('config-overlay').classList.add('hidden');
       init();
     } else {
-      // Pre-fill if partially saved
       document.getElementById('inp-url').value = supabaseUrl;
       document.getElementById('inp-key').value = supabaseKey;
     }
   }
 
   function saveConfig() {
-    const url = document.getElementById('inp-url').value.trim();
-    const key = document.getElementById('inp-key').value.trim();
-    const err = document.getElementById('config-error');
-
+    var url = document.getElementById('inp-url').value.trim();
+    var key = document.getElementById('inp-key').value.trim();
+    var err = document.getElementById('config-error');
     if (!url || !url.startsWith('https://')) {
       err.textContent = 'Please enter a valid Supabase URL (starts with https://)';
-      err.classList.add('visible');
-      return;
+      err.classList.add('visible'); return;
     }
     if (!key || key.length < 20) {
       err.textContent = 'Please enter a valid Supabase anon key.';
-      err.classList.add('visible');
-      return;
+      err.classList.add('visible'); return;
     }
-
     localStorage.setItem('kd_url', url);
     localStorage.setItem('kd_key', key);
-    supabaseUrl = url;
-    supabaseKey = key;
-
+    supabaseUrl = url; supabaseKey = key;
     document.getElementById('config-overlay').classList.add('hidden');
     err.classList.remove('visible');
     init();
   }
 
-  // Allow pressing Enter to save
-  document.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !document.getElementById('config-overlay').classList.contains('hidden')) {
-      saveConfig();
-    }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !document.getElementById('config-overlay').classList.contains('hidden')) saveConfig();
   });
 
   // =============================================
   //  CLOCK
   // =============================================
   function updateClock() {
-    const now = new Date();
-    const h = now.getHours().toString().padStart(2, '0');
-    const m = now.getMinutes().toString().padStart(2, '0');
-    document.getElementById('clock').textContent = `${h}:${m}`;
+    var now = new Date();
+    var h = now.getHours().toString().padStart(2,'0');
+    var m = now.getMinutes().toString().padStart(2,'0');
+    document.getElementById('clock').textContent = h + ':' + m;
   }
 
   // =============================================
-  //  SUPABASE FETCH
+  //  DATE FILTERING
+  // =============================================
+  function setDateQuick(mode, btn) {
+    activeDateMode = mode;
+    dateFrom = null; dateTo = null;
+    document.getElementById('date-from').value = '';
+    document.getElementById('date-to').value = '';
+    document.querySelectorAll('.dq-btn').forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    renderOrders();
+  }
+
+  function setDateRange() {
+    var from = document.getElementById('date-from').value;
+    var to   = document.getElementById('date-to').value;
+    if (!from && !to) return;
+    activeDateMode = 'range';
+    dateFrom = from ? new Date(from + 'T00:00:00') : null;
+    dateTo   = to   ? new Date(to   + 'T23:59:59') : null;
+    document.querySelectorAll('.dq-btn').forEach(function(b) { b.classList.remove('active'); });
+    renderOrders();
+  }
+
+  function orderMatchesDateFilter(order) {
+    var created = new Date(order.created_at);
+    var now = new Date();
+
+    if (activeDateMode === 'today') {
+      return created.toDateString() === now.toDateString();
+    }
+    if (activeDateMode === 'yesterday') {
+      var yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+      return created.toDateString() === yesterday.toDateString();
+    }
+    if (activeDateMode === 'week') {
+      var weekAgo = new Date(now); weekAgo.setDate(now.getDate() - 7);
+      return created >= weekAgo;
+    }
+    if (activeDateMode === 'range') {
+      if (dateFrom && created < dateFrom) return false;
+      if (dateTo   && created > dateTo)   return false;
+      return true;
+    }
+    return true; // 'all'
+  }
+
+  // =============================================
+  //  FETCH
   // =============================================
   async function fetchOrders() {
     setStatus('loading', 'Fetching...');
     resetProgress();
-
     try {
-      // Get all orders from the last 7 days, sorted oldest first
-      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
-      const url = `${supabaseUrl}/rest/v1/orders?select=*&created_at=gte.${weekAgo}&order=created_at.asc`;
-
-      const res = await fetch(url, {
+      var threeMonthsAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
+      var url = supabaseUrl + '/rest/v1/orders?select=*&created_at=gte.' + threeMonthsAgo + '&order=created_at.asc';
+      var res = await fetch(url, {
         headers: {
           'apikey': supabaseKey,
-          'Authorization': `Bearer ${supabaseKey}`,
+          'Authorization': 'Bearer ' + supabaseKey,
           'Content-Type': 'application/json'
         }
       });
-
-      if (!res.ok) {
-        const body = await res.text();
-        throw new Error(`HTTP ${res.status}: ${body}`);
-      }
-
-      const data = await res.json();
+      if (!res.ok) { var b = await res.text(); throw new Error('HTTP ' + res.status + ': ' + b); }
+      var data = await res.json();
       allOrders = data;
-
-      // Assign stable display numbers
-      data.forEach(order => {
-        if (!orderNumMap[order.id]) {
-          orderCounter++;
-          orderNumMap[order.id] = orderCounter;
-        }
+      data.forEach(function(order) {
+        if (!orderNumMap[order.id]) { orderCounter++; orderNumMap[order.id] = orderCounter; }
       });
-
       updateStats();
       renderOrders();
-      setStatus('ok', `Updated ${formatTime(new Date())}`);
-
-    } catch (err) {
-      setStatus('error', 'Error: ' + err.message.substring(0, 40));
+      setStatus('ok', 'Updated ' + formatTime(new Date()));
+    } catch(err) {
+      setStatus('error', 'Error: ' + err.message.substring(0, 50));
       console.error('Fetch error:', err);
     }
-
     startProgress();
   }
 
   // =============================================
-  //  RENDER
+  //  STATUS CYCLE
   // =============================================
-  function setFilter(f, btn) {
-    activeFilter = f;
-    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-    btn.classList.add('active');
-    renderOrders();
-  }
-
-  function renderOrders() {
-    const grid = document.getElementById('order-grid');
-    const emptyState = document.getElementById('empty-state');
-
-    let filtered = allOrders;
-
-    if (activeFilter === 'active') {
-      filtered = allOrders.filter(o => o.status !== 'done');
-    } else if (activeFilter !== 'all') {
-      filtered = allOrders.filter(o => o.status === activeFilter);
-    }
-
-    // Sort by pickup time urgency: new/preparing/ready first, then by created_at
-    const statusOrder = { new: 0, preparing: 1, ready: 2, done: 3 };
-    filtered.sort((a, b) => {
-      const sa = statusOrder[a.status] ?? 0;
-      const sb = statusOrder[b.status] ?? 0;
-      if (sa !== sb) return sa - sb;
-      return new Date(a.created_at) - new Date(b.created_at);
-    });
-
-    if (filtered.length === 0) {
-      grid.innerHTML = '';
-      emptyState.classList.add('visible');
-      return;
-    }
-
-    emptyState.classList.remove('visible');
-    grid.innerHTML = filtered.map(renderCard).join('');
-  }
-
-  function renderCard(order) {
-    const num = orderNumMap[order.id] || '?';
-    const items = parseItems(order.items);
-    const status = order.status || 'new';
-    const statusClass = status.replace(/\s+/g, '_');
-    const age = getAge(order.created_at);
-    const total = order.total != null ? '$' + Number(order.total).toFixed(2) : '';
-    const pickupTime = order.pickup_time || 'Not specified';
-    const phone = order.phone ? formatPhone(order.phone) : '';
-
-    const itemsHtml = items.map(function(item) {
-      const addonsHtml = item.item_addons && item.item_addons.length > 0
-        ? '<div class="item-addons">+ ' + esc(item.item_addons.join(', ')) + '</div>'
-        : '';
-      return '<div class="item-row">' +
-        '<span class="item-qty">' + (item.quantity || 1) + 'x</span>' +
-        '<span class="item-name">' + esc(item.product || item.name || 'Unknown item') + '</span>' +
-        '<span class="item-size">' + esc(item.size || '') + '</span>' +
-        '</div>' + addonsHtml;
-    }).join('');
-
-    const btnLabels = { new: '&#9654; START', preparing: '&#10003; READY', ready: '&#10004; DONE' };
-    const footerRight = status !== 'done'
-      ? '<button class="status-btn ' + statusClass + '" onclick="cycleStatus(\'' + order.id + '\',\'' + status + '\')">' + (btnLabels[status] || status.toUpperCase()) + '</button>'
-      : '<div class="status-badge done">&#10004; DONE</div>';
-
-    return '<div class="order-card status-' + statusClass + '">' +
-      '<div class="card-header">' +
-        '<div class="order-num">#' + num + '</div>' +
-        '<div class="order-meta">' +
-          '<div class="customer-name">' + esc(order.customer_name || 'Unknown') + '</div>' +
-          (phone ? '<div class="customer-phone">' + phone + '</div>' : '') +
-        '</div>' +
-      '</div>' +
-      '<div class="pickup-badge">' +
-        '<span class="pickup-icon">&#128336;</span>' +
-        '<span class="pickup-time">' + esc(pickupTime) + '</span>' +
-        '<span class="order-age">' + age + '</span>' +
-      '</div>' +
-      '<div class="items-list">' +
-        (itemsHtml || '<div style="color:var(--text-dim);font-size:0.8rem;font-family:var(--mono)">No items</div>') +
-      '</div>' +
-      '<div class="card-footer">' +
-        '<div class="order-total">' + total + '</div>' +
-        footerRight +
-      '</div>' +
-    '</div>';
-  }
-
   var statusFlow = { new: 'preparing', preparing: 'ready', ready: 'done' };
 
   async function cycleStatus(orderId, currentStatus) {
     var nextStatus = statusFlow[currentStatus];
     if (!nextStatus) return;
-
-    // Optimistic local update so UI feels instant
     var order = allOrders.find(function(o) { return String(o.id) === String(orderId); });
     if (order) order.status = nextStatus;
-    updateStats();
-    renderOrders();
-
+    updateStats(); renderOrders();
     try {
       var res = await fetch(supabaseUrl + '/rest/v1/orders?id=eq.' + orderId, {
         method: 'PATCH',
@@ -919,129 +462,244 @@
         },
         body: JSON.stringify({ status: nextStatus })
       });
-
       if (!res.ok) {
         var body = await res.text();
         if (order) order.status = currentStatus;
-        updateStats();
-        renderOrders();
-        alert('Failed to update order status: ' + body);
+        updateStats(); renderOrders();
+        alert('Failed to update status: ' + body);
       }
-
-    } catch (err) {
+    } catch(err) {
       if (order) order.status = currentStatus;
-      updateStats();
-      renderOrders();
+      updateStats(); renderOrders();
       console.error('Status update error:', err);
     }
   }
 
-  function parseItems(raw) {
-    if (!raw) return [];
-    if (Array.isArray(raw)) return raw;
-    if (typeof raw === 'string') {
-      try { return JSON.parse(raw); } catch { return []; }
-    }
-    return [];
+  // =============================================
+  //  RENDER
+  // =============================================
+  function setFilter(f, btn) {
+    activeFilter = f;
+    document.querySelectorAll('.filter-tab').forEach(function(t) { t.classList.remove('active'); });
+    btn.classList.add('active');
+    renderOrders();
   }
 
-  function updateStats() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+  function renderOrders() {
+    var grid = document.getElementById('order-grid');
+    var emptyState = document.getElementById('empty-state');
 
-    const counts = { new: 0, preparing: 0, ready: 0, done: 0, today: 0 };
+    var filtered = allOrders.filter(function(o) { return orderMatchesDateFilter(o); });
 
-    allOrders.forEach(o => {
-      const created = new Date(o.created_at);
-      if (created >= today) counts.today++;
-      if (counts[o.status] !== undefined) counts[o.status]++;
+    if (activeFilter === 'active') {
+      filtered = filtered.filter(function(o) { return o.status !== 'done'; });
+    } else if (activeFilter !== 'all') {
+      filtered = filtered.filter(function(o) { return o.status === activeFilter; });
+    }
+
+    var statusOrder = { new:0, preparing:1, ready:2, done:3 };
+    filtered.sort(function(a,b) {
+      var sa = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 0;
+      var sb = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 0;
+      if (sa !== sb) return sa - sb;
+      return new Date(a.created_at) - new Date(b.created_at);
     });
 
-    document.getElementById('stat-new').textContent = counts.new;
-    document.getElementById('stat-preparing').textContent = counts.preparing;
-    document.getElementById('stat-ready').textContent = counts.ready;
-    document.getElementById('stat-today').textContent = counts.today;
+    document.getElementById('stat-today').textContent = filtered.length;
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '';
+      emptyState.classList.add('visible');
+      return;
+    }
+    emptyState.classList.remove('visible');
+    grid.innerHTML = filtered.map(renderCard).join('');
+  }
+
+  function renderCard(order) {
+    var num = orderNumMap[order.id] || '?';
+    var items = parseItems(order.items);
+    var status = order.status || 'new';
+    var statusClass = status.replace(/\s+/g,'_');
+    var total = order.total != null ? '$' + Number(order.total).toFixed(2) : '';
+    var pickupTime = order.pickup_time || 'Not specified';
+    var phone = order.phone ? formatPhone(order.phone) : '';
+    var orderDateStr = formatFullDate(order.created_at);
+    var orderAgeStr  = getAge(order.created_at);
+
+    var itemsHtml = items.map(function(item) {
+      var addonsHtml = item.item_addons && item.item_addons.length > 0
+        ? '<div class="item-addons">+ ' + esc(item.item_addons.join(', ')) + '</div>' : '';
+      return '<div class="item-row">' +
+        '<span class="item-qty">' + (item.quantity||1) + 'x</span>' +
+        '<span class="item-name">' + esc(item.product||item.name||'Unknown') + '</span>' +
+        '<span class="item-size">' + esc(item.size||'') + '</span>' +
+        '</div>' + addonsHtml;
+    }).join('');
+
+    var btnLabels = { new:'&#9654; START', preparing:'&#10003; READY', ready:'&#10004; DONE' };
+    var footerRight = status !== 'done'
+      ? '<button class="status-btn ' + statusClass + '" onclick="cycleStatus(\'' + order.id + '\',\'' + status + '\')">' + (btnLabels[status]||status.toUpperCase()) + '</button>'
+      : '<div class="status-badge done">&#10004; DONE</div>';
+
+    return '<div class="order-card status-' + statusClass + '">' +
+      '<div class="card-header">' +
+        '<div class="order-num">#' + num + '</div>' +
+        '<div class="order-meta">' +
+          '<div class="customer-name">' + esc(order.customer_name||'Unknown') + '</div>' +
+          (phone ? '<div class="customer-phone">' + phone + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="pickup-badge">' +
+        '<span class="pickup-icon">&#128336;</span>' +
+        '<span class="pickup-time">' + esc(pickupTime) + '</span>' +
+        '<div class="order-date">' + orderDateStr + '<br>' + orderAgeStr + '</div>' +
+      '</div>' +
+      '<div class="items-list">' +
+        (itemsHtml || '<div style="color:var(--text-dim);font-size:0.8rem;font-family:var(--mono)">No items</div>') +
+      '</div>' +
+      '<div class="card-footer">' +
+        '<div class="order-total">' + total + '</div>' +
+        footerRight +
+      '</div>' +
+    '</div>';
+  }
+
+  // =============================================
+  //  EXPORT TO CSV
+  // =============================================
+  function exportToCSV() {
+    var filtered = allOrders.filter(function(o) { return orderMatchesDateFilter(o); });
+    if (filtered.length === 0) { alert('No orders to export for the current date filter.'); return; }
+
+    var rows = [['Order#','Date','Time','Customer','Phone','Pickup Time','Status','Items','Subtotal','Tax','Total']];
+
+    filtered.forEach(function(order) {
+      var num = orderNumMap[order.id] || '';
+      var created = new Date(order.created_at);
+      var dateStr = created.toLocaleDateString('en-CA');
+      var timeStr = created.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit' });
+      var items = parseItems(order.items);
+      var itemsSummary = items.map(function(i) {
+        var s = (i.quantity||1) + 'x ' + (i.product||i.name||'?') + ' (' + (i.size||'') + ')';
+        if (i.item_addons && i.item_addons.length) s += ' +' + i.item_addons.join('+');
+        return s;
+      }).join(' | ');
+
+      rows.push([
+        '#' + num,
+        dateStr,
+        timeStr,
+        order.customer_name || '',
+        order.phone || '',
+        order.pickup_time || '',
+        order.status || '',
+        itemsSummary,
+        order.subtotal != null ? Number(order.subtotal).toFixed(2) : '',
+        order.tax != null ? Number(order.tax).toFixed(2) : '',
+        order.total != null ? Number(order.total).toFixed(2) : ''
+      ]);
+    });
+
+    var csv = rows.map(function(row) {
+      return row.map(function(cell) {
+        var s = String(cell).replace(/"/g, '""');
+        return /[",\n]/.test(s) ? '"' + s + '"' : s;
+      }).join(',');
+    }).join('\n');
+
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    var link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    var today = new Date().toISOString().slice(0,10);
+    link.download = 'alex-pizza-orders-' + today + '.csv';
+    link.click();
   }
 
   // =============================================
   //  HELPERS
   // =============================================
+  function parseItems(raw) {
+    if (!raw) return [];
+    if (Array.isArray(raw)) return raw;
+    if (typeof raw === 'string') { try { return JSON.parse(raw); } catch(e) { return []; } }
+    return [];
+  }
+
+  function updateStats() {
+    var counts = { new:0, preparing:0, ready:0 };
+    allOrders.forEach(function(o) {
+      if (counts[o.status] !== undefined) counts[o.status]++;
+    });
+    document.getElementById('stat-new').textContent = counts.new;
+    document.getElementById('stat-preparing').textContent = counts.preparing;
+    document.getElementById('stat-ready').textContent = counts.ready;
+  }
+
   function setStatus(type, text) {
-    const dot = document.getElementById('status-dot');
-    const label = document.getElementById('status-text');
-    dot.className = type === 'ok' ? '' : type;
-    if (type === 'ok') dot.style.background = 'var(--green)';
+    var dot = document.getElementById('status-dot');
+    var label = document.getElementById('status-text');
+    dot.className = (type === 'ok') ? '' : type;
+    dot.style.background = type === 'ok' ? 'var(--green)' : '';
     label.textContent = text;
+  }
+
+  function formatFullDate(isoStr) {
+    if (!isoStr) return '';
+    var d = new Date(isoStr);
+    return d.toLocaleDateString('en-CA', { weekday:'short', month:'short', day:'numeric' }) +
+           ' ' + d.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit' });
   }
 
   function getAge(isoStr) {
     if (!isoStr) return '';
-    const diff = Date.now() - new Date(isoStr).getTime();
-    const mins = Math.floor(diff / 60000);
+    var diff = Date.now() - new Date(isoStr).getTime();
+    var mins = Math.floor(diff / 60000);
     if (mins < 1) return 'just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hrs = Math.floor(mins / 60);
-    return `${hrs}h ${mins % 60}m ago`;
+    if (mins < 60) return mins + 'm ago';
+    var hrs = Math.floor(mins / 60);
+    return hrs + 'h ' + (mins % 60) + 'm ago';
   }
 
   function formatPhone(p) {
-    const digits = String(p).replace(/\D/g, '');
-    if (digits.length === 10) {
-      return `(${digits.slice(0,3)}) ${digits.slice(3,6)}-${digits.slice(6)}`;
-    }
+    var digits = String(p).replace(/\D/g,'');
+    if (digits.length === 10) return '(' + digits.slice(0,3) + ') ' + digits.slice(3,6) + '-' + digits.slice(6);
     return p;
   }
 
   function formatTime(date) {
-    return date.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString('en-CA', { hour:'2-digit', minute:'2-digit' });
   }
 
   function esc(str) {
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  // =============================================
-  //  PROGRESS BAR
-  // =============================================
   function resetProgress() {
-    const fill = document.getElementById('progress-fill');
+    var fill = document.getElementById('progress-fill');
     fill.style.transition = 'none';
     fill.style.width = '0%';
     clearInterval(progressTimer);
   }
 
   function startProgress() {
-    const fill = document.getElementById('progress-fill');
-    let elapsed = 0;
+    var fill = document.getElementById('progress-fill');
+    var elapsed = 0;
     clearInterval(progressTimer);
-    progressTimer = setInterval(() => {
+    progressTimer = setInterval(function() {
       elapsed++;
-      const pct = (elapsed / REFRESH_SEC) * 100;
       fill.style.transition = 'width 1s linear';
-      fill.style.width = pct + '%';
-      if (elapsed >= REFRESH_SEC) {
-        clearInterval(progressTimer);
-        fetchOrders();
-      }
+      fill.style.width = ((elapsed / REFRESH_SEC) * 100) + '%';
+      if (elapsed >= REFRESH_SEC) { clearInterval(progressTimer); fetchOrders(); }
     }, 1000);
   }
 
-  // =============================================
-  //  INIT
-  // =============================================
   function init() {
     updateClock();
     setInterval(updateClock, 10000);
     fetchOrders();
   }
 
-  // =============================================
-  //  BOOT
-  // =============================================
   loadConfig();
 </script>
 </body>
