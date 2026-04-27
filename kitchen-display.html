@@ -412,6 +412,23 @@
     background: transparent;
   }
 
+  /* ---- STATUS ACTION BUTTON ---- */
+  .status-btn {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    padding: 7px 14px;
+    border-radius: 4px;
+    border: none;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .status-btn:active { transform: scale(0.96); opacity: 0.8; }
+  .status-btn.new       { background: var(--amber); color: #0f0e0c; }
+  .status-btn.preparing { background: #3b82f6; color: #fff; }
+  .status-btn.ready     { background: var(--green); color: #0f0e0c; }
+
   /* ---- EMPTY STATE ---- */
   #empty-state {
     display: none;
@@ -811,6 +828,15 @@
       filtered = allOrders.filter(o => o.status === activeFilter);
     }
 
+    // Sort by pickup time urgency: new/preparing/ready first, then by created_at
+    const statusOrder = { new: 0, preparing: 1, ready: 2, done: 3 };
+    filtered.sort((a, b) => {
+      const sa = statusOrder[a.status] ?? 0;
+      const sb = statusOrder[b.status] ?? 0;
+      if (sa !== sb) return sa - sb;
+      return new Date(a.created_at) - new Date(b.created_at);
+    });
+
     if (filtered.length === 0) {
       grid.innerHTML = '';
       emptyState.classList.add('visible');
@@ -824,52 +850,90 @@
   function renderCard(order) {
     const num = orderNumMap[order.id] || '?';
     const items = parseItems(order.items);
-    const statusClass = (order.status || 'new').replace(/\s+/g, '_');
+    const status = order.status || 'new';
+    const statusClass = status.replace(/\s+/g, '_');
     const age = getAge(order.created_at);
-    const total = order.total != null ? `$${Number(order.total).toFixed(2)}` : '';
+    const total = order.total != null ? '$' + Number(order.total).toFixed(2) : '';
     const pickupTime = order.pickup_time || 'Not specified';
     const phone = order.phone ? formatPhone(order.phone) : '';
 
-    const itemsHtml = items.map(item => {
+    const itemsHtml = items.map(function(item) {
       const addonsHtml = item.item_addons && item.item_addons.length > 0
-        ? `<div class="item-addons">+ ${item.item_addons.join(', ')}</div>`
+        ? '<div class="item-addons">+ ' + esc(item.item_addons.join(', ')) + '</div>'
         : '';
-      return `
-        <div class="item-row">
-          <span class="item-qty">${item.quantity || 1}x</span>
-          <span class="item-name">${esc(item.product || item.name || 'Unknown item')}</span>
-          <span class="item-size">${esc(item.size || '')}</span>
-        </div>
-        ${addonsHtml}
-      `;
+      return '<div class="item-row">' +
+        '<span class="item-qty">' + (item.quantity || 1) + 'x</span>' +
+        '<span class="item-name">' + esc(item.product || item.name || 'Unknown item') + '</span>' +
+        '<span class="item-size">' + esc(item.size || '') + '</span>' +
+        '</div>' + addonsHtml;
     }).join('');
 
-    return `
-      <div class="order-card status-${statusClass}">
-        <div class="card-header">
-          <div class="order-num">#${num}</div>
-          <div class="order-meta">
-            <div class="customer-name">${esc(order.customer_name || 'Unknown')}</div>
-            ${phone ? `<div class="customer-phone">${phone}</div>` : ''}
-          </div>
-        </div>
+    const btnLabels = { new: '&#9654; START', preparing: '&#10003; READY', ready: '&#10004; DONE' };
+    const footerRight = status !== 'done'
+      ? '<button class="status-btn ' + statusClass + '" onclick="cycleStatus(\'' + order.id + '\',\'' + status + '\')">' + (btnLabels[status] || status.toUpperCase()) + '</button>'
+      : '<div class="status-badge done">&#10004; DONE</div>';
 
-        <div class="pickup-badge">
-          <span class="pickup-icon">🕐</span>
-          <span class="pickup-time">${esc(pickupTime)}</span>
-          <span class="order-age">${age}</span>
-        </div>
+    return '<div class="order-card status-' + statusClass + '">' +
+      '<div class="card-header">' +
+        '<div class="order-num">#' + num + '</div>' +
+        '<div class="order-meta">' +
+          '<div class="customer-name">' + esc(order.customer_name || 'Unknown') + '</div>' +
+          (phone ? '<div class="customer-phone">' + phone + '</div>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="pickup-badge">' +
+        '<span class="pickup-icon">&#128336;</span>' +
+        '<span class="pickup-time">' + esc(pickupTime) + '</span>' +
+        '<span class="order-age">' + age + '</span>' +
+      '</div>' +
+      '<div class="items-list">' +
+        (itemsHtml || '<div style="color:var(--text-dim);font-size:0.8rem;font-family:var(--mono)">No items</div>') +
+      '</div>' +
+      '<div class="card-footer">' +
+        '<div class="order-total">' + total + '</div>' +
+        footerRight +
+      '</div>' +
+    '</div>';
+  }
 
-        <div class="items-list">
-          ${itemsHtml || '<div style="color:var(--text-dim);font-size:0.8rem;font-family:var(--mono)">No items</div>'}
-        </div>
+  var statusFlow = { new: 'preparing', preparing: 'ready', ready: 'done' };
 
-        <div class="card-footer">
-          <div class="order-total">${total}</div>
-          <div class="status-badge ${statusClass}">${order.status || 'new'}</div>
-        </div>
-      </div>
-    `;
+  async function cycleStatus(orderId, currentStatus) {
+    var nextStatus = statusFlow[currentStatus];
+    if (!nextStatus) return;
+
+    // Optimistic local update so UI feels instant
+    var order = allOrders.find(function(o) { return String(o.id) === String(orderId); });
+    if (order) order.status = nextStatus;
+    updateStats();
+    renderOrders();
+
+    try {
+      var res = await fetch(supabaseUrl + '/rest/v1/orders?id=eq.' + orderId, {
+        method: 'PATCH',
+        headers: {
+          'apikey': supabaseKey,
+          'Authorization': 'Bearer ' + supabaseKey,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify({ status: nextStatus })
+      });
+
+      if (!res.ok) {
+        var body = await res.text();
+        if (order) order.status = currentStatus;
+        updateStats();
+        renderOrders();
+        alert('Failed to update order status: ' + body);
+      }
+
+    } catch (err) {
+      if (order) order.status = currentStatus;
+      updateStats();
+      renderOrders();
+      console.error('Status update error:', err);
+    }
   }
 
   function parseItems(raw) {
