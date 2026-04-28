@@ -249,6 +249,7 @@
     </div>
     <div id="clock">--:--</div>
     <button class="hdr-btn" onclick="fetchOrders()">Refresh</button>
+    <button class="hdr-btn" id="mute-btn" onclick="toggleMute()" title="Toggle order alert sound">&#128276; Sound On</button>
     <button class="hdr-btn export" onclick="exportToCSV()">&#8595; Export CSV</button>
   </div>
 </header>
@@ -321,6 +322,8 @@
   var progressTimer = null;
   var REFRESH_SEC = 30;
   var activeSort = 'pickup_asc';
+  var knownOrderIds = new Set();
+  var audioCtx = null;
 
   // =============================================
   //  CONFIG
@@ -440,6 +443,7 @@
       data.forEach(function(order) {
         if (!orderNumMap[order.id]) { orderCounter++; orderNumMap[order.id] = orderCounter; }
       });
+      checkForNewOrders(data);
       updateStats();
       renderOrders();
       setStatus('ok', 'Updated ' + formatTime(new Date()));
@@ -736,6 +740,63 @@
       fill.style.width = ((elapsed / REFRESH_SEC) * 100) + '%';
       if (elapsed >= REFRESH_SEC) { clearInterval(progressTimer); fetchOrders(); }
     }, 1000);
+  }
+
+  // ── SOUND ALERT ──────────────────────────────────────────────────────────
+  function getAudioCtx() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return audioCtx;
+  }
+
+  function playChime() {
+    try {
+      var ctx = getAudioCtx();
+      // Two-tone chime: high note then slightly lower
+      var notes = [880, 660];
+      notes.forEach(function(freq, i) {
+        var osc = ctx.createOscillator();
+        var gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        var startTime = ctx.currentTime + i * 0.18;
+        gain.gain.setValueAtTime(0, startTime);
+        gain.gain.linearRampToValueAtTime(0.4, startTime + 0.01);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.5);
+        osc.start(startTime);
+        osc.stop(startTime + 0.5);
+      });
+    } catch(e) {
+      console.log('Audio not available:', e);
+    }
+  }
+
+  var soundMuted = false;
+
+  function toggleMute() {
+    soundMuted = !soundMuted;
+    var btn = document.getElementById('mute-btn');
+    btn.textContent = soundMuted ? '\uD83D\uDD07 Muted' : '\uD83D\uDD14 Sound On';
+    btn.style.color = soundMuted ? 'var(--text-dim)' : '';
+    btn.style.borderColor = soundMuted ? 'var(--border)' : '';
+    if (!soundMuted) playChime(); // preview sound on unmute
+  }
+
+  function checkForNewOrders(freshOrders) {
+    if (knownOrderIds.size === 0) {
+      // First load — just populate the set, no alert
+      freshOrders.forEach(function(o) { knownOrderIds.add(o.id); });
+      return;
+    }
+    var hasNew = false;
+    freshOrders.forEach(function(o) {
+      if (!knownOrderIds.has(o.id)) {
+        knownOrderIds.add(o.id);
+        hasNew = true;
+      }
+    });
+    if (hasNew && !soundMuted) playChime();
   }
 
   function init() {
