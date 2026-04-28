@@ -287,6 +287,13 @@
   <button class="filter-tab" onclick="setFilter('ready', this)">Ready</button>
   <button class="filter-tab" onclick="setFilter('done', this)">Done</button>
   <button class="filter-tab" onclick="setFilter('all', this)">All</button>
+  <div style="margin-left:auto;display:flex;align-items:center;gap:6px;padding:0 8px;">
+    <span style="font-family:var(--mono);font-size:0.62rem;color:var(--text-dim);letter-spacing:0.1em;">SORT</span>
+    <button class="dq-btn active" id="sort-pickup-asc" onclick="setSort('pickup_asc',this)">Pickup &#9650;</button>
+    <button class="dq-btn" id="sort-pickup-desc" onclick="setSort('pickup_desc',this)">Pickup &#9660;</button>
+    <button class="dq-btn" id="sort-status" onclick="setSort('status',this)">Status</button>
+    <button class="dq-btn" id="sort-newest" onclick="setSort('newest',this)">Newest</button>
+  </div>
 </div>
 
 <div id="order-grid"></div>
@@ -311,6 +318,7 @@
   var orderNumMap  = {};
   var progressTimer = null;
   var REFRESH_SEC = 30;
+  var activeSort = 'pickup_asc';
 
   // =============================================
   //  CONFIG
@@ -485,6 +493,26 @@
     renderOrders();
   }
 
+  function setSort(s, btn) {
+    activeSort = s;
+    document.querySelectorAll('#sort-pickup-asc,#sort-pickup-desc,#sort-status,#sort-newest').forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    renderOrders();
+  }
+
+  function parsePickupTime(str) {
+    if (!str) return null;
+    // Try to parse "April 27 at 5:00 pm" or "Monday at 5:00 pm"
+    var match = str.match(/at\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)/i);
+    if (!match) return null;
+    var hours = parseInt(match[1]);
+    var mins = parseInt(match[2] || '0');
+    var period = match[3].toLowerCase();
+    if (period === 'pm' && hours !== 12) hours += 12;
+    if (period === 'am' && hours === 12) hours = 0;
+    return hours * 60 + mins;
+  }
+
   function renderOrders() {
     var grid = document.getElementById('order-grid');
     var emptyState = document.getElementById('empty-state');
@@ -499,6 +527,18 @@
 
     var statusOrder = { new:0, preparing:1, ready:2, done:3 };
     filtered.sort(function(a,b) {
+      if (activeSort === 'pickup_asc' || activeSort === 'pickup_desc') {
+        var ta = parsePickupTime(a.pickup_time);
+        var tb = parsePickupTime(b.pickup_time);
+        if (ta === null && tb === null) return 0;
+        if (ta === null) return 1;
+        if (tb === null) return -1;
+        return activeSort === 'pickup_asc' ? ta - tb : tb - ta;
+      }
+      if (activeSort === 'newest') {
+        return new Date(b.created_at) - new Date(a.created_at);
+      }
+      // Default: sort by status then created_at
       var sa = statusOrder[a.status] !== undefined ? statusOrder[a.status] : 0;
       var sb = statusOrder[b.status] !== undefined ? statusOrder[b.status] : 0;
       if (sa !== sb) return sa - sb;
