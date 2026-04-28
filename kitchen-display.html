@@ -287,13 +287,15 @@
   <button class="filter-tab" onclick="setFilter('ready', this)">Ready</button>
   <button class="filter-tab" onclick="setFilter('done', this)">Done</button>
   <button class="filter-tab" onclick="setFilter('all', this)">All</button>
-  <div style="margin-left:auto;display:flex;align-items:center;gap:6px;padding:0 8px;">
-    <span style="font-family:var(--mono);font-size:0.62rem;color:var(--text-dim);letter-spacing:0.1em;">SORT</span>
-    <button class="dq-btn active" id="sort-pickup-asc" onclick="setSort('pickup_asc',this)">Pickup &#9650;</button>
-    <button class="dq-btn" id="sort-pickup-desc" onclick="setSort('pickup_desc',this)">Pickup &#9660;</button>
-    <button class="dq-btn" id="sort-status" onclick="setSort('status',this)">Status</button>
-    <button class="dq-btn" id="sort-newest" onclick="setSort('newest',this)">Newest</button>
-  </div>
+</div>
+
+<!-- SORT BAR -->
+<div id="sort-bar">
+  <span class="date-label">SORT BY</span>
+  <button class="dq-btn active" id="sort-pickup-asc" onclick="setSort('pickup_asc',this)">Pickup &#9650; Earliest</button>
+  <button class="dq-btn" id="sort-pickup-desc" onclick="setSort('pickup_desc',this)">Pickup &#9660; Latest</button>
+  <button class="dq-btn" id="sort-status" onclick="setSort('status',this)">Status</button>
+  <button class="dq-btn" id="sort-newest" onclick="setSort('newest',this)">Newest Order</button>
 </div>
 
 <div id="order-grid"></div>
@@ -563,6 +565,8 @@
     var statusClass = status.replace(/\s+/g,'_');
     var total = order.total != null ? '$' + Number(order.total).toFixed(2) : '';
     var pickupTime = order.pickup_time || 'Not specified';
+    // Clean up any accidental "Today at April" double prefix
+    pickupTime = pickupTime.replace(/^today\s+at\s+/i, '').replace(/^today,?\s*/i, '');
     var phone = order.phone ? formatPhone(order.phone) : '';
     var orderDateStr = formatFullDate(order.created_at);
     var orderAgeStr  = getAge(order.created_at);
